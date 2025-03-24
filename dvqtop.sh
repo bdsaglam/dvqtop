@@ -20,6 +20,18 @@ NTFY_TOPIC=""
 # Global variables
 REPO_ROOT=""
 
+# Add color definitions after the global variables
+# Color definitions
+readonly COLOR_RESET=$(tput sgr0)
+readonly COLOR_HEADER=$(tput setaf 6)    # Cyan for headers
+readonly COLOR_SUCCESS=$(tput setaf 2)    # Green for success
+readonly COLOR_ERROR=$(tput setaf 1)      # Red for errors
+readonly COLOR_WARNING=$(tput setaf 3)    # Yellow for warnings
+readonly COLOR_INFO=$(tput setaf 4)       # Blue for info
+readonly COLOR_RUNNING=$(tput setaf 5)    # Magenta for running
+readonly COLOR_BOLD=$(tput bold)
+readonly COLOR_DIM=$(tput dim)
+
 # Function to print error messages to stderr
 error() {
     echo "Error: $1" >&2
@@ -65,7 +77,7 @@ fi
 
 # Function to send notification when experiments complete
 send_completion_notification() {
-    local summary="$1"
+    local success_count="$1"
     local failed_count="$2"
     
     if [ -z "$NTFY_TOPIC" ]; then
@@ -83,11 +95,24 @@ send_completion_notification() {
     local TITLE="$emoji $REPO_NAME experiments completed"
     curl \
         -H "Title: $TITLE" \
-        -d "$summary" \
+        -d "Success: $success_count, Failed: $failed_count" \
         ntfy.sh/"$NTFY_TOPIC" > /dev/null 2>&1
     
     touch "$LOCK_FILE"
-    echo "Notification sent: $TITLE ($summary)"
+    echo "Notification sent: $TITLE"
+}
+
+# Function to create a progress bar
+create_progress_bar() {
+    local percent=$1
+    local width=20
+    local num_filled=$(( (percent * width) / 100 ))
+    local num_empty=$((width - num_filled))
+    
+    printf "["
+    printf "%${num_filled}s" | tr ' ' '='
+    printf "%${num_empty}s" | tr ' ' ' '
+    printf "] %3d%%" "$percent"
 }
 
 # Main monitoring loop
@@ -96,9 +121,9 @@ while true; do
     tput clear
     tput cup 0 0
     
-    # Print header
-    echo "DVC Queue Status Monitor (Updated: $(date '+%Y-%m-%d %H:%M:%S'))"
-    echo "------------------------------------------------------------------------------"
+    # Print header with colors
+    echo "${COLOR_BOLD}${COLOR_HEADER}DVC Queue Status Monitor ${COLOR_DIM}(Updated: $(date '+%Y-%m-%d %H:%M:%S'))${COLOR_RESET}"
+    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
 
     # Fetch the queue status
     QUEUE_STATUS=$(dvc queue status 2>/dev/null) || error "Failed to retrieve DVC queue status."
@@ -125,62 +150,56 @@ while true; do
     QUEUED_COUNT=$(echo "$QUEUED_EXPERIMENTS" | wc -w)
     RUNNING_COUNT=$(echo "$RUNNING_EXPERIMENTS" | wc -w)
 
-    # Display summary at the top
-    SUMMARY="Success: $SUCCESS_COUNT, Failed: $FAILED_COUNT, Queued: $QUEUED_COUNT, Running: $RUNNING_COUNT"
-    echo "$SUMMARY"
-    echo "------------------------------------------------------------------------------"
+    # Update the summary display with colors
+    echo "${COLOR_SUCCESS}✓ Success: $SUCCESS_COUNT${COLOR_RESET} | ${COLOR_ERROR}✗ Failed: $FAILED_COUNT${COLOR_RESET} | ${COLOR_INFO}⋯ Queued: $QUEUED_COUNT${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running: $RUNNING_COUNT${COLOR_RESET}"
+    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
 
-    # Report completed experiments
+    # Report completed experiments with colors
     if [ -n "$SUCCESS_EXPERIMENTS" ]; then
         for exp in $SUCCESS_EXPERIMENTS; do
-            printf "%-12s | %s\n" "$exp" "Success"
+            printf "${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}✓ Success${COLOR_RESET}\n" "$exp"
         done
     fi
 
     if [ -n "$FAILED_EXPERIMENTS" ]; then
         for exp in $FAILED_EXPERIMENTS; do
-            printf "%-12s | %s\n" "$exp" "Failed"
+            printf "${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}✗ Failed${COLOR_RESET}\n" "$exp"
         done
     fi
 
     if [ -n "$QUEUED_EXPERIMENTS" ]; then
         for exp in $QUEUED_EXPERIMENTS; do
-            printf "%-12s | %s\n" "$exp" "Queued"
+            printf "${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}⋯ Queued${COLOR_RESET}\n" "$exp"
         done
     fi
 
-    echo "------------------------------------------------------------------------------"
-    # Iterate over each running experiment and fetch the last log line
+    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
+    # Update running experiments display
     for exp in $RUNNING_EXPERIMENTS; do
-        # Fetch logs for the experiment
         LOGS=$(dvc queue logs "$exp" 2>/dev/null) || {
-            echo "Failed to retrieve logs for experiment: $exp"
+            echo "${COLOR_ERROR}Failed to retrieve logs for experiment: $exp${COLOR_RESET}"
             continue
         }
 
-        # Check if logs are available
         if [ -z "$LOGS" ]; then
-            echo "No logs found for experiment: $exp"
+            echo "${COLOR_WARNING}No logs found for experiment: $exp${COLOR_RESET}"
             continue
         fi
 
-        # Extract the last log line with progress bar, if it exists
-        # If it doesn't exist, extract the last line
         LAST_LOG=$(echo "$LOGS" | grep -E 's/it' | tail -n 1)
         if [ -z "$LAST_LOG" ]; then
             LAST_LOG=$(echo "$LOGS" | tail -n 1)
         fi
 
-        # Display the experiment name and its last log line
-        printf "%-12s | %-8s | %s\n" "$exp" "Running" "$LAST_LOG"
+        printf "${COLOR_RUNNING}%-12s${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running${COLOR_RESET} | %s\n" "$exp" "$LAST_LOG"
     done
 
-    echo "------------------------------------------------------------------------------"
+    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
     # Handle notifications if enabled
     if [ -n "$NTFY_TOPIC" ]; then
         if [[ "$QUEUED_COUNT" -eq 0 && "$RUNNING_COUNT" -eq 0 && $((SUCCESS_COUNT + FAILED_COUNT)) -gt 0 ]]; then
             if [ ! -f "$LOCK_FILE" ]; then
-                send_completion_notification "$SUMMARY" "$FAILED_COUNT"
+                send_completion_notification "$SUCCESS_COUNT" "$FAILED_COUNT"
             fi
         else
             # Reset lock if queue changes
