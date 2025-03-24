@@ -17,7 +17,13 @@ chmod +x ~/.local/bin/dvqtop
 ## Usage
 
 ```sh
-dvqtop  [-n <poll_interval>] [-t <ntfy_topic>]
+dvqtop [-n <poll_interval>] [-t <ntfy_topic>]
 ```
 
-![dvqtop](./out.jpeg)
+which outputs something like this:
+
+![dvqtop](./out.png)
+
+When all jobs are done, you will get a notification like this:
+
+![notification](./notification.png)
