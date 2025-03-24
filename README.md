@@ -6,8 +6,8 @@ A script to poll the DVC queue and send notifications via [ntfy](https://ntfy.sh
 ## Installation
 
 ```sh
-cp ./dvqtop.sh ~/.local/bin/
-chmod +x ~/.local/bin/dvqtop.sh
+cp ./dvqtop.sh ~/.local/bin/dvqtop
+chmod +x ~/.local/bin/dvqtop
 ```
 
 ## Usage

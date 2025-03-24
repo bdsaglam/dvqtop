@@ -125,22 +125,27 @@ while true; do
     QUEUED_COUNT=$(echo "$QUEUED_EXPERIMENTS" | wc -w)
     RUNNING_COUNT=$(echo "$RUNNING_EXPERIMENTS" | wc -w)
 
+    # Display summary at the top
+    SUMMARY="Success: $SUCCESS_COUNT, Failed: $FAILED_COUNT, Queued: $QUEUED_COUNT, Running: $RUNNING_COUNT"
+    echo "$SUMMARY"
+    echo "------------------------------------------------------------------------------"
+
     # Report completed experiments
     if [ -n "$SUCCESS_EXPERIMENTS" ]; then
         for exp in $SUCCESS_EXPERIMENTS; do
-            printf "%-15s | %s\n" "$exp" "Success"
+            printf "%-12s | %s\n" "$exp" "Success"
         done
     fi
 
     if [ -n "$FAILED_EXPERIMENTS" ]; then
         for exp in $FAILED_EXPERIMENTS; do
-            printf "%-15s | %s\n" "$exp" "Failed"
+            printf "%-12s | %s\n" "$exp" "Failed"
         done
     fi
 
     if [ -n "$QUEUED_EXPERIMENTS" ]; then
         for exp in $QUEUED_EXPERIMENTS; do
-            printf "%-15s | %s\n" "$exp" "Queued"
+            printf "%-12s | %s\n" "$exp" "Queued"
         done
     fi
 
@@ -167,13 +172,10 @@ while true; do
         fi
 
         # Display the experiment name and its last log line
-        printf "%-15s | %s\n" "$exp" "Running: $LAST_LOG"
+        printf "%-12s | %-8s | %s\n" "$exp" "Running" "$LAST_LOG"
     done
 
     echo "------------------------------------------------------------------------------"
-    SUMMARY="Success: $SUCCESS_COUNT, Failed: $FAILED_COUNT, Queued: $QUEUED_COUNT, Running: $RUNNING_COUNT"
-    echo "$SUMMARY"
-
     # Handle notifications if enabled
     if [ -n "$NTFY_TOPIC" ]; then
         if [[ "$QUEUED_COUNT" -eq 0 && "$RUNNING_COUNT" -eq 0 && $((SUCCESS_COUNT + FAILED_COUNT)) -gt 0 ]]; then
