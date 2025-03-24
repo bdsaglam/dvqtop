@@ -13,5 +13,5 @@ chmod +x ~/.local/bin/dvqtop.sh
 ## Usage
 
 ```sh
-dvqtop.sh  [-n <poll_interval>] [-t <ntfy_topic>]
+dvqtop  [-n <poll_interval>] [-t <ntfy_topic>]
 ```
