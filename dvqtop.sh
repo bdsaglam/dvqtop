@@ -122,7 +122,8 @@ while true; do
     tput cup 0 0
     
     # Print header with colors
-    echo "${COLOR_BOLD}${COLOR_HEADER}DVC Queue Status Monitor ${COLOR_DIM}(Updated: $(date '+%Y-%m-%d %H:%M:%S'))${COLOR_RESET}"
+    echo "${COLOR_BOLD}${COLOR_HEADER}DVC Queue Status Monitor${COLOR_RESET}"
+    echo "${COLOR_DIM}Last Update: $(date '+%Y-%m-%d %H:%M:%S')${COLOR_RESET}"
     echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
 
     # Fetch the queue status
@@ -130,7 +131,7 @@ while true; do
 
     # Check if the queue is empty
     if echo "$QUEUE_STATUS" | grep -q "No tasks in the queue"; then
-        echo "No experiments in the DVC queue."
+        echo "${COLOR_INFO}No experiments in the DVC queue.${COLOR_RESET}"
         if [ -f "$LOCK_FILE" ]; then
             rm -f "$LOCK_FILE"
         fi
@@ -150,30 +151,35 @@ while true; do
     QUEUED_COUNT=$(echo "$QUEUED_EXPERIMENTS" | wc -w)
     RUNNING_COUNT=$(echo "$RUNNING_EXPERIMENTS" | wc -w)
 
-    # Update the summary display with colors
-    echo "${COLOR_SUCCESS}✓ Success: $SUCCESS_COUNT${COLOR_RESET} | ${COLOR_ERROR}✗ Failed: $FAILED_COUNT${COLOR_RESET} | ${COLOR_INFO}⋯ Queued: $QUEUED_COUNT${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running: $RUNNING_COUNT${COLOR_RESET}"
+    # Calculate total
+    TOTAL_COUNT=$((SUCCESS_COUNT + FAILED_COUNT + QUEUED_COUNT + RUNNING_COUNT))
+
+    # Update the summary display with colors (without percentages)
+    printf "Total: ${COLOR_BOLD}%d${COLOR_RESET} | ${COLOR_SUCCESS}✓ Success: %d${COLOR_RESET} | ${COLOR_ERROR}✗ Failed: %d${COLOR_RESET} | ${COLOR_INFO}⋯ Queued: %d${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running: %d${COLOR_RESET}\n" \
+        "$TOTAL_COUNT" "$SUCCESS_COUNT" "$FAILED_COUNT" "$QUEUED_COUNT" "$RUNNING_COUNT"
+    
     echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
     
-    # Add table header
-    printf "${COLOR_BOLD}%-12s | %-9s | %-60s${COLOR_RESET}\n" "Experiment" "Status" "Log"
+    # Add table header with improved spacing
+    printf "${COLOR_BOLD}%-12s | %-10s | %-60s${COLOR_RESET}\n" "Experiment" "Status" "Log"
     echo "${COLOR_HEADER}-----------------------------------------------------------------------------${COLOR_RESET}"
 
-    # Report completed experiments with colors
+    # Report completed experiments with colors and improved spacing
     if [ -n "$SUCCESS_EXPERIMENTS" ]; then
         for exp in $SUCCESS_EXPERIMENTS; do
-            printf "${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}✓ Success${COLOR_RESET}\n" "$exp"
+            printf "${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}Completed${COLOR_RESET}\n" "$exp" "✓ Success"
         done
     fi
 
     if [ -n "$FAILED_EXPERIMENTS" ]; then
         for exp in $FAILED_EXPERIMENTS; do
-            printf "${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}✗ Failed${COLOR_RESET}\n" "$exp"
+            printf "${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}Failed${COLOR_RESET}\n" "$exp" "✗ Failed"
         done
     fi
 
     if [ -n "$QUEUED_EXPERIMENTS" ]; then
         for exp in $QUEUED_EXPERIMENTS; do
-            printf "${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}⋯ Queued${COLOR_RESET}\n" "$exp"
+            printf "${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}Waiting to start${COLOR_RESET}\n" "$exp" "⋯ Queued"
         done
     fi
 
