@@ -19,3 +19,5 @@ chmod +x ~/.local/bin/dvqtop
 ```sh
 dvqtop  [-n <poll_interval>] [-t <ntfy_topic>]
 ```
+
+![dvqtop](./out.jpeg)
