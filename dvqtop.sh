@@ -124,7 +124,7 @@ while true; do
     # Print header with colors
     echo "${COLOR_BOLD}${COLOR_HEADER}DVC Queue Status Monitor${COLOR_RESET}"
     echo "${COLOR_DIM}Last Update: $(date '+%Y-%m-%d %H:%M:%S')${COLOR_RESET}"
-    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
+    echo "${COLOR_HEADER}================================================================================${COLOR_RESET}"
 
     # Fetch the queue status
     QUEUE_STATUS=$(dvc queue status 2>/dev/null) || error "Failed to retrieve DVC queue status."
@@ -158,32 +158,31 @@ while true; do
     printf "Total: ${COLOR_BOLD}%d${COLOR_RESET} | ${COLOR_SUCCESS}✓ Success: %d${COLOR_RESET} | ${COLOR_ERROR}✗ Failed: %d${COLOR_RESET} | ${COLOR_INFO}⋯ Queued: %d${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running: %d${COLOR_RESET}\n" \
         "$TOTAL_COUNT" "$SUCCESS_COUNT" "$FAILED_COUNT" "$QUEUED_COUNT" "$RUNNING_COUNT"
     
-    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
+    echo "${COLOR_HEADER}================================================================================${COLOR_RESET}"
     
     # Add table header with improved spacing
-    printf "${COLOR_BOLD}%-12s | %-10s | %-60s${COLOR_RESET}\n" "Experiment" "Status" "Log"
-    echo "${COLOR_HEADER}-----------------------------------------------------------------------------${COLOR_RESET}"
+    printf "${COLOR_BOLD}%-10s | %-10s | %-60s${COLOR_RESET}\n" "Experiment" "Status" "Log"
+    echo "${COLOR_HEADER}-------------------------------------------------------------------------------${COLOR_RESET}"
 
     # Report completed experiments with colors and improved spacing
     if [ -n "$SUCCESS_EXPERIMENTS" ]; then
         for exp in $SUCCESS_EXPERIMENTS; do
-            printf "${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}Completed${COLOR_RESET}\n" "$exp" "✓ Success"
+            printf "${COLOR_SUCCESS}%-10s${COLOR_RESET} | ${COLOR_SUCCESS}%-12s${COLOR_RESET} | ${COLOR_SUCCESS}Completed${COLOR_RESET}\n" "$exp" "✓ Success"
         done
     fi
 
     if [ -n "$FAILED_EXPERIMENTS" ]; then
         for exp in $FAILED_EXPERIMENTS; do
-            printf "${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}Failed${COLOR_RESET}\n" "$exp" "✗ Failed"
+            printf "${COLOR_ERROR}%-10s${COLOR_RESET} | ${COLOR_ERROR}%-12s${COLOR_RESET} | ${COLOR_ERROR}Failed${COLOR_RESET}\n" "$exp" "✗ Failed"
         done
     fi
 
     if [ -n "$QUEUED_EXPERIMENTS" ]; then
         for exp in $QUEUED_EXPERIMENTS; do
-            printf "${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}Waiting to start${COLOR_RESET}\n" "$exp" "⋯ Queued"
+            printf "${COLOR_INFO}%-10s${COLOR_RESET} | ${COLOR_INFO}%-12s${COLOR_RESET} | ${COLOR_INFO}Waiting to start${COLOR_RESET}\n" "$exp" "⋯ Queued"
         done
     fi
 
-    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
     # Update running experiments display
     for exp in $RUNNING_EXPERIMENTS; do
         LOGS=$(dvc queue logs "$exp" 2>/dev/null) || {
@@ -201,10 +200,15 @@ while true; do
             LAST_LOG=$(echo "$LOGS" | tail -n 1)
         fi
 
-        printf "${COLOR_RUNNING}%-12s${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running${COLOR_RESET} | %s\n" "$exp" "$LAST_LOG"
+        # Truncate log to 80 characters and add ellipsis if needed
+        if [ ${#LAST_LOG} -gt 50 ]; then
+            LAST_LOG="${LAST_LOG:0:50}..."
+        fi
+
+        printf "${COLOR_RUNNING}%-10s${COLOR_RESET} | ${COLOR_RUNNING}%-12s${COLOR_RESET} | %s\n" "$exp" "⟳ Running" "$LAST_LOG"
     done
 
-    echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
+    echo "${COLOR_HEADER}================================================================================${COLOR_RESET}"
     # Handle notifications if enabled
     if [ -n "$NTFY_TOPIC" ]; then
         if [[ "$QUEUED_COUNT" -eq 0 && "$RUNNING_COUNT" -eq 0 && $((SUCCESS_COUNT + FAILED_COUNT)) -gt 0 ]]; then
