@@ -20,7 +20,7 @@ chmod +x ~/.local/bin/dvqtop
 dvqtop [-n <poll_interval>] [-t <ntfy_topic>]
 ```
 
-which outputs something like this:
+The output will look like this:
 
 ![dvqtop](./out.png)
 
