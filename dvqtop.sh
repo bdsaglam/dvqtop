@@ -153,6 +153,10 @@ while true; do
     # Update the summary display with colors
     echo "${COLOR_SUCCESS}✓ Success: $SUCCESS_COUNT${COLOR_RESET} | ${COLOR_ERROR}✗ Failed: $FAILED_COUNT${COLOR_RESET} | ${COLOR_INFO}⋯ Queued: $QUEUED_COUNT${COLOR_RESET} | ${COLOR_RUNNING}⟳ Running: $RUNNING_COUNT${COLOR_RESET}"
     echo "${COLOR_HEADER}==============================================================================${COLOR_RESET}"
+    
+    # Add table header
+    printf "${COLOR_BOLD}%-12s | %-9s | %-60s${COLOR_RESET}\n" "Experiment" "Status" "Log"
+    echo "${COLOR_HEADER}-----------------------------------------------------------------------------${COLOR_RESET}"
 
     # Report completed experiments with colors
     if [ -n "$SUCCESS_EXPERIMENTS" ]; then
